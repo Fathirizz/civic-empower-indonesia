@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pancasila Civic Empowerment</title>
+    <link rel="icon" type="image/png" href="assets/images/favicon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /*Tailwind CSS*/
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+        
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background-color: #000000; 
+            overflow-y: auto; 
+            user-select: none;
+            margin: 0;
+            padding: 0;
+            touch-action: pan-x pan-y; 
+        }
+
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            max-width: 500px;
+            max-height: 900px;
+            margin: auto;
+            position: absolute;
+            top: 0; bottom: 0; left: 0; right: 0;
+            background-color: #000000;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            max-height: 100dvh; /*Dynamic Viewport Height*/
+            transform: scale(0.9); /*Mengurangi scale sebesar 10%*/
+            transform-origin: center center;
+        }
+        
+        @keyframes pulse-node {
+            0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7); transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.2); }
+            100% { box-shadow: 0 0 0 10px rgba(234, 179, 8, 0); transform: translate(-50%, -50%) scale(1); }
+        }
+        .node-unresolved { animation: pulse-node 1.5s infinite; background-color: #e4af11; }
+        .node-good { background-color: #2dc263; transform: translate(-50%, -50%); }
+        .node-bad { background-color: #dc3333; transform: translate(-50%, -50%); }
+
+        .cursor::after { content: '|'; animation: blink 1s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /*KOTAK DIALOG*/
+        .dialog-box {
+            background-color: #000000;
+            border: 2px solid #ffffff;
+            box-shadow: 0 -5px 25px rgba(255, 255, 255, 0.1);
+        }
+        
+        .dialog-name-box {
+            background-color: #000000;
+            border: 2px solid #ffffff;
+        }
+
+        .sprite-enter { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+        /*Custom Scrollbar untuk menu top bar stats*/
+        ::-webkit-scrollbar { height: 4px; width: 4px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: #fff; border-radius: 2px; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="text-white overflow-y-auto min-h-screen">
+
+    <div id="game-container" class="border-x-4 border-black">
+        
+
+    <!-- DASHBOARD INDIKATOR STATISTIK LENGKAP -->
+        <div id="top-bar" class="absolute top-0 w-full bg-black/90 backdrop-blur border-b border-white z-50 flex-col p-1 shadow-md hidden">
+            <div class="flex justify-between items-center px-1 mb-0.5">
+                <span class="text-yellow-400 text-[10px] font-bold tracking-wider truncate">PANCASILA CIVIC EMPOWERMENT</span>
+                <button onclick="ui.showHistory()" class="px-2 py-0 border border-white hover:bg-white hover:text-black rounded text-[9px] font-bold text-white transition">Riwayat</button>
+            </div>
+            
+            <div class="flex overflow-x-auto hide-scrollbar text-[8px] font-semibold px-1 space-x-3 pb-0.5 border-b border-gray-700 mb-0.5">
+                <div class="flex-shrink-0 text-gray-300">Sila 1:<span id="stat-s1" class="text-white ml-0.5">50</span></div>
+                <div class="flex-shrink-0 text-gray-300">Sila 2:<span id="stat-s2" class="text-white ml-0.5">50</span></div>
+                <div class="flex-shrink-0 text-gray-300">Sila 3:<span id="stat-s3" class="text-white ml-0.5">50</span></div>
+                <div class="flex-shrink-0 text-gray-300">Sila 4:<span id="stat-s4" class="text-white ml-0.5">50</span></div>
+                <div class="flex-shrink-0 text-gray-300">Sila 5:<span id="stat-s5" class="text-white ml-0.5">50</span></div>
+            </div>
+            <div class="flex overflow-x-auto hide-scrollbar text-[8px] font-semibold px-1 space-x-3 pb-0.5">
+                <div class="flex-shrink-0 text-gray-300">Kepercayaan:<span id="stat-trust" class="text-blue-400 ml-0.5">50</span></div>
+                <div class="flex-shrink-0 text-gray-300">Keterlibatan:<span id="stat-engage" class="text-blue-400 ml-0.5">50</span></div>
+                <div class="flex-shrink-0 text-gray-300">Knowledges:<span id="stat-know" class="text-green-400 ml-0.5">50</span></div>
+                <div class="flex-shrink-0 text-gray-300">Skills:<span id="stat-skill" class="text-green-400 ml-0.5">50</span></div>
+                <div class="flex-shrink-0 text-gray-300">Disposition:<span id="stat-disp" class="text-green-400 ml-0.5">50</span></div>
+            </div>
+        </div>
+
+        <!-- LAYAR 1: START -->
+        <div id="screen-start" class="absolute inset-0 flex flex-col items-center justify-center bg-cover bg-center z-40" style="background-image: url('assets/images/bg_start.jpg');">
+            <button onclick="game.startPrologue()" class="relative z-10 text-3xl text-white hover:text-red-600 transition animate-pulse tracking-widest uppercase font-bold border-2 border-white px-6 py-2 rounded-lg bg-black/50">Mulai</button>
+        </div>
+
+        <!-- LAYAR 2: GAME & MAP CONTAINER -->
+        <div id="screen-vn" class="absolute inset-0 bg-black hidden z-30 bg-cover bg-center transition-all duration-700">
+            <img id="map-bg" src="assets/images/map_indonesia.png" 
+                 class="absolute inset-0 w-full h-full object-contain opacity-0 transition-opacity duration-1000" style="filter: brightness(0.6);" alt="Map Indonesia Portrait">
+            
+            <div id="map-title" class="absolute top-16 w-full text-center pointer-events-none hidden z-20 px-2">
+                <h2 class="text-base font-bold text-white drop-shadow-md uppercase">Peta Krisis Nasional</h2>
+            </div>
+
+            <div id="map-nodes" class="absolute inset-0 hidden z-20"></div>
+
+            <div class="absolute bottom-0 w-full h-[65%] flex justify-between items-end px-2 pointer-events-none z-30">
+                <img id="sprite-siska" src="" class="h-full object-contain object-bottom sprite-enter hidden transition-all duration-500" alt="Siska">
+                <img id="sprite-local" src="" class="h-full object-contain object-bottom sprite-enter hidden" alt="Local">
+            </div>
+
+            <div class="absolute bottom-3 left-1/2 transform -translate-x-1/2 w-[92%] z-40">
+                <div id="choices-container" class="flex flex-col space-y-2 mb-3 hidden items-center w-full max-h-[50vh] overflow-y-auto"></div>
+
+                <!-- Kotak Dialog -->
+                <div id="dialog-wrapper" class="dialog-box rounded-lg p-4 relative cursor-pointer" onclick="vn.advanceDialog()">
+                    <div id="dialog-name" class="dialog-name-box absolute -top-4 left-4 text-white px-3 py-0.5 rounded text-xs font-bold shadow hidden">Nama</div>
+                    <p id="dialog-text" class="text-sm text-white min-h-[3.5rem] leading-relaxed cursor"></p>
+                    <div class="absolute bottom-1 right-3 text-gray-400 text-[10px] animate-bounce">Ketuk untuk lanjut ▼</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LAYAR 3: EVALUASI ENDING BIASA -->
+        <div id="screen-ending" class="absolute inset-0 flex flex-col items-center justify-center bg-black hidden z-50 p-4 text-center overflow-y-auto">
+            <div class="relative z-10 w-full max-w-sm flex flex-col items-center mt-auto mb-auto py-6">
+                <img id="ending-sprite" src="" class="h-32 object-contain mb-3" alt="Ending Sprite">
+                <h1 id="ending-title" class="text-2xl font-bold mb-2 uppercase drop-shadow-lg">Title</h1>
+                <p id="ending-desc" class="text-xs text-gray-300 mb-4 leading-relaxed px-2"></p>
+                
+                <div class="w-full mb-6 bg-black p-3 rounded-lg border-2 border-white shadow-xl text-left space-y-3">
+                    <div>
+                        <h3 class="font-bold text-[11px] text-yellow-400 mb-1 border-b border-gray-700 pb-1">Rata-Rata Nilai Pancasila: <span id="end-stat-pancasila" class="text-white float-right"></span></h3>
+                        <p class="text-[10px] text-gray-300 leading-tight grid grid-cols-2 gap-1 mt-1">
+                            <span>Sila 1: <b id="end-stat-s1" class="text-white"></b></span>
+                            <span>Sila 2: <b id="end-stat-s2" class="text-white"></b></span>
+                            <span>Sila 3: <b id="end-stat-s3" class="text-white"></b></span>
+                            <span>Sila 4: <b id="end-stat-s4" class="text-white"></b></span>
+                            <span>Sila 5: <b id="end-stat-s5" class="text-white"></b></span>
+                        </p>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-[11px] text-yellow-400 mb-1 border-b border-gray-700 pb-1">Dimensi Civic Empowerment</h3>
+                        <p class="text-[10px] text-gray-300 leading-tight grid grid-cols-2 gap-1 mt-1">
+                            <span>Kepercayaan: <b id="end-stat-trust" class="text-white"></b></span>
+                            <span>Keterlibatan: <b id="end-stat-engage" class="text-white"></b></span>
+                            <span>Knowledges: <b id="end-stat-know" class="text-white"></b></span>
+                            <span>Skills: <b id="end-stat-skill" class="text-white"></b></span>
+                            <span>Disposition: <b id="end-stat-disp" class="text-white"></b></span>
+                        </p>
+                    </div>
+                </div>
+
+                <div id="ending-buttons-container" class="flex flex-col space-y-2.5 w-full"></div>
+            </div>
+        </div>
+
+        <!-- LAYAR 4: SPECIAL FOR PERFECT ENDING -->
+        <div id="screen-perfect-special" class="absolute inset-0 bg-cover bg-center hidden z-50 transition-all duration-700" style="background-image: url('assets/images/bg_perfect.jpg');">
+            
+            <div class="absolute bottom-0 w-full h-[75%] flex justify-center items-end pointer-events-none z-10">
+                <img src="assets/sprites/siska_perfect.png" class="h-full object-contain object-bottom sprite-enter" alt="Siska Perfect">
+            </div>
+
+            <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-[92%] z-20">
+                <div class="dialog-box rounded-lg p-4 relative cursor-pointer" onclick="location.reload()">
+                    <div class="dialog-name-box absolute -top-4 left-4 text-white px-3 py-0.5 rounded text-xs font-bold shadow">Siska</div>
+                    <p class="text-sm text-white min-h-[4rem] leading-relaxed">
+                        Kerja bagus! Anda berhasil menyelesaikan krisis dengan sangat sempurna. Anda telah membimbing bangsa ini dan melakukan pemberdayaan warga negara dengan memegang teguh nilai-nilai Pancasila!
+                    </p>
+                    <div class="absolute bottom-1 right-3 text-white text-[10px] animate-bounce">Ketuk untuk Selesai ↺</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL RIWAYAT DIALOG -->
+        <div id="modal-history" class="absolute inset-0 bg-black/80 hidden z-50 flex justify-center items-center backdrop-blur-sm p-3">
+            <div class="bg-black w-full h-[85%] rounded-xl border-2 border-white flex flex-col overflow-hidden shadow-2xl">
+                <div class="p-3 border-b-2 border-white flex justify-between items-center bg-gray-900">
+                    <h2 class="text-sm font-bold text-white">Riwayat</h2>
+                    <button onclick="ui.hideHistory()" class="text-gray-400 hover:text-white font-bold text-xl leading-none">&times;</button>
+                </div>
+                <div id="history-content" class="flex-1 p-3 overflow-y-auto space-y-2 text-xs"></div>
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- MAIN GAME LOGIC SCRIPT -->
+    <script>
+        /*MANAJEMEN AUDIO*/
+        let bgm = new Audio('assets/audio/bgm.mp3');
+        bgm.loop = true;
+        let currentVoice = null;
+
+        function stopVoice() {
+            if (currentVoice) {
+                currentVoice.pause();
+                currentVoice.currentTime = 0;
+            }
+        }
+
+        function playVoice(src) {
+            stopVoice(); //Hentikan audio sebelumnya
+            if (src) {
+                currentVoice = new Audio(src);
+                currentVoice.play().catch(err => console.log("Audio terblokir browser:", err));
+            }
+        }
+
+        const mapLocations = [
+        { id: 'sumut', name: 'Sumatera Utara', x: 75, y: 15, bg: 'assets/images/bg_sumut.jpg', sprite: 'assets/sprites/warga.png' },
+        { id: 'riau', name: 'Riau', x: 64, y: 22, bg: 'assets/images/bg_riau.jpg', sprite: 'assets/sprites/warga.png' },
+        { id: 'kalbar', name: 'Kalimantan Barat', x: 63, y: 38, bg: 'assets/images/bg_kalbar.jpg', sprite: 'assets/sprites/warga.png' },
+        { id: 'jakarta', name: 'DKI Jakarta', x: 34, y: 32, bg: 'assets/images/bg_jakarta.jpg', sprite: 'assets/sprites/warga.png' },
+        { id: 'jateng', name: 'Jawa Tengah', x: 30, y: 38, bg: 'assets/images/bg_jateng.jpg', sprite: 'assets/sprites/warga.png' },
+        { id: 'jatim', name: 'Jawa Timur', x: 28, y: 43, bg: 'assets/images/bg_jatim.jpg', sprite: 'assets/sprites/warga.png' },
+        { id: 'bali', name: 'Bali', x: 27, y: 48, bg: 'assets/images/bg_bali.jpg', sprite: 'assets/sprites/warga.png' },
+        { id: 'sulsel', name: 'Sulawesi Selatan', x: 45, y: 58, bg: 'assets/images/bg_sulsel.jpg', sprite: 'assets/sprites/warga.png' },
+        { id: 'maluku', name: 'Maluku', x: 50, y: 76, bg: 'assets/images/bg_maluku.jpg', sprite: 'assets/sprites/warga.png' },
+        { id: 'papua', name: 'Papua', x: 44, y: 92, bg: 'assets/images/bg_papua.jpg', sprite: 'assets/sprites/warga.png' }
+    ];
+
+        /*SKENARIO*/
+        const scenarios = {
+        'sumut': [
+            { speaker: 'Siska', text: 'Terjadi ketegangan antar warga terkait pendirian rumah ibadah. Miskomunikasi regulasi memicu konflik horizontal.', audio: 'assets/audio/siska_sumut_1.mp3' },
+            { speaker: 'Warga', text: 'Pak, kami merasa hak beribadah dipersulit birokrasi, sedangkan kelompok lain menolak karena kurangnya sosialisasi!', audio: 'assets/audio/warga_1.mp3' },
+            { type: 'choice', choices: [
+                    { text: 'Fasilitasi dialog terbuka lintas agama dan sosialisasikan regulasi.', impact: { s1: 50, trust: 25, correct: true }, reply: 'Tepat! Keputusan bijak. Musyawarah mengembalikan kedamaian antar umat beragama.', audio: 'assets/audio/siska_sumut_c1.mp3' },
+                    { text: 'Tutup paksa lokasi pembangunan dengan aparat demi meredam konflik instan.', impact: { s1: -20, trust: -20, correct: false }, reply: 'Ketegangan mereda sesaat, namun kebencian terpendam semakin memuncak.', audio: 'assets/audio/siska_sumut_c2.mp3' },
+                    { text: 'Serahkan sepenuhnya ke pengadilan tanpa intervensi dan mediasi negara.', impact: { s1: -10, trust: -10, correct: false }, reply: 'Proses hukum berlarut-larut, konflik sosial tetap memanas di bawah permukaan.', audio: 'assets/audio/siska_sumut_c3.mp3' }
+            ]}
+        ],
+        'riau': [
+            { speaker: 'Siska', text: 'Eksploitasi hutan oleh korporasi membuat warga desa kehilangan mata pencaharian dan terkena ISPA.', audio: 'assets/audio/siska_riau_1.mp3' },
+            { speaker: 'Warga', text: 'Tolong kami Pak Presiden! Hutan adat dirampas. Kami sakit di tanah sendiri, sedangkan perusahaan untung besar!', audio: 'assets/audio/warga_1.mp3' },
+            { type: 'choice', choices: [
+                    { text: 'Cabut izin korporasi pelanggar dan kembalikan hak kelola pada masyarakat adat.', impact: { s5: 25, correct: true }, reply: 'Tepat! Keadilan sosial ditegakkan. Masyarakat kembali berdaya mengelola hutan adat.', audio: 'assets/audio/siska_riau_c1.mp3' },
+                    { text: 'Beri ganti rugi kecil ke warga, biarkan korporasi beroperasi demi PAD.', impact: { s5: -20, correct: false }, reply: 'Pendapatan daerah aman, namun penderitaan dan kerusakan ekologi terus berlanjut.', audio: 'assets/audio/siska_riau_c2.mp3' },
+                    { text: 'Wajibkan korporasi membuat program CSR tanpa menghukum mereka.', impact: { s5: -10, correct: false }, reply: 'Fasilitas desa dibangun, namun kerusakan lingkungan dan sumber penyakit tetap ada.', audio: 'assets/audio/siska_riau_c3.mp3' }
+            ]}
+        ],
+        'kalbar': [
+            { speaker: 'Siska', text: 'Sengketa lahan terjadi antara masyarakat adat dengan pemerintah untuk proyek infrastruktur.', audio: 'assets/audio/siska_kalbar_1.mp3' },
+            { speaker: 'Warga', text: 'Pemerintah merampas tanah adat demi proyek tanpa ganti rugi adil dan musyawarah!', audio: 'assets/audio/warga_1.mp3' },
+            { type: 'choice', choices: [
+                    { text: 'Tunda proyek, musyawarah untuk relokasi atau kompensasi berkelanjutan.', impact: { s4: 25, correct: true }, reply: 'Tepat! Keputusan adil. Warga rela bekerja sama karena dihargai melalui musyawarah mufakat.', audio: 'assets/audio/siska_kalbar_c1.mp3' },
+                    { text: 'Gunakan hukum formal untuk menggusur paksa karena tidak ada sertifikat.', impact: { s4: -20, correct: false }, reply: 'Infrastruktur terbangun di atas air mata rakyat. Meninggalkan luka sejarah.', audio: 'assets/audio/siska_kalbar_c2.mp3' },
+                    { text: 'Sewa lahan warga untuk jangka waktu tertentu sebagai jalan pintas.', impact: { s4: -10, correct: false }, reply: 'Warga menyetujui sementara, namun ketidakpastian masa depan lahan masih membayangi mereka.', audio: 'assets/audio/siska_kalbar_c3.mp3' }
+            ]}
+        ],
+        'jakarta': [
+            { speaker: 'Siska', text: 'Mendekati pemilu, marak penyebaran hoaks dan ujaran kebencian di media sosial yang mengancam persatuan.', audio: 'assets/audio/siska_jakarta_1.mp3' },
+            { speaker: 'Warga', text: 'Kami bingung mana berita benar! Tetangga bertengkar hanya karena informasi grup chat.', audio: 'assets/audio/warga_1.mp3' },
+            { type: 'choice', choices: [
+                    { text: 'Bentuk satgas literasi digital dan kampanye anti-hoaks bersama influencer.', impact: { know: 50, correct: true }, reply: 'Tepat! Pemahaman digital warga meningkat. Mereka kini mampu memfilter informasi secara mandiri.', audio: 'assets/audio/siska_jakarta_c1.mp3' },
+                    { text: 'Blokir akses internet di daerah rawan dan tangkap penyebar tanpa edukasi.', impact: { know: -20, correct: false }, reply: 'Penyebaran terhenti, namun warga merasa dibungkam dan memicu ketidakpercayaan.', audio: 'assets/audio/siska_jakarta_c2.mp3' },
+                    { text: 'Abaikan saja, anggap ini sebagai bagian dari kebebasan berekspresi penuh.', impact: { know: -10, correct: false }, reply: 'Disinformasi merajalela, sukses memecah belah masyarakat secara ekstrem.', audio: 'assets/audio/siska_jakarta_c3.mp3' }
+            ]}
+        ],
+        'jateng': [
+            { speaker: 'Siska', text: 'Semangat gotong royong memudar di kawasan industri ini. Individualisme merajalela.', audio: 'assets/audio/siska_jateng_1.mp3' },
+            { speaker: 'Warga', text: 'Semua warga sibuk kerja di pabrik. Tetangga sakit pun tidak ada yang peduli apalagi kerja bakti.', audio: 'assets/audio/warga_1.mp3' },
+            { type: 'choice', choices: [
+                    { text: 'Aktifkan program poskamling dengan insentif dari komunitas, kerja bakti fleksibel, dan kegiatan hiburan.', impact: { s3: 25, engage: 25, correct: true }, reply: 'Tepat! Gotong royong hidup kembali. Warga merasakan ikatan sosial yang kuat.', audio: 'assets/audio/siska_jateng_c1.mp3' },
+                    { text: 'Biarkan saja, itu adalah konsekuensi logis dari modernisasi yang tak terhindarkan.', impact: { s3: -20, engage: -20, correct: false }, reply: 'Kohesi sosial runtuh, memicu tingginya kriminalitas dan rasa alienasi warga.', audio: 'assets/audio/siska_jateng_c2.mp3' },
+                    { text: 'Berikan denda material bagi warga yang tidak ikut kerja bakti mingguan.', impact: { s3: -10, engage: -10, correct: false }, reply: 'Warga hadir secara fisik karena takut denda, bukan karena kebersamaan yang tulus.', audio: 'assets/audio/siska_jateng_c3.mp3' }
+            ]}
+        ],
+        'jatim': [
+            { speaker: 'Siska', text: 'Aksi demonstrasi besar mahasiswa menolak regulasi baru. Mulai terjadi anarkisme.', audio: 'assets/audio/siska_jatim_1.mp3' },
+            { speaker: 'Warga', text: 'Suara kami tak didengar! Kami akan blokir jalan sampai tuntutan dipenuhi.', audio: 'assets/audio/warga_1.mp3' },
+            { type: 'choice', choices: [
+                    { text: 'Turun temui demonstran tanpa barikade represif, dengarkan aspirasi langsung.', impact: { s4: 25, correct: true }, reply: 'Tepat! Demonstran merasa dihargai. Mereka kembali tertib setelah aspirasi diterima.', audio: 'assets/audio/siska_jatim_c1.mp3' },
+                    { text: 'Kerahkan aparat membubarkan paksa dengan gas air mata demi ketertiban instan.', impact: { s4: -20, correct: false }, reply: 'Tertib tercapai dengan ketakutan, merusak esensi demokrasi.', audio: 'assets/audio/siska_jatim_c2.mp3' },
+                    { text: 'Kirim perwakilan pejabat tingkat bawah untuk meredam amarah massa.', impact: { s4: -10, correct: false }, reply: 'Massa merasa diremehkan karena pemimpin utama tidak berani berdialog langsung.', audio: 'assets/audio/siska_jatim_c3.mp3' }
+            ]}
+        ],
+        'bali': [
+            { speaker: 'Siska', text: 'Komersialisasi pariwisata mengancam kelestarian adat dan merendahkan martabat budaya.', audio: 'assets/audio/siska_bali_1.mp3' },
+            { speaker: 'Warga', text: 'Turis asing tidak menghormati tempat suci, tanah leluhur digusur untuk hotel.', audio: 'assets/audio/warga_1.mp3' },
+            { type: 'choice', choices: [
+                    { text: 'Terapkan regulasi wisata berbasis budaya, perketat aturan etika turis asing.', impact: { s2: 50, correct: true }, reply: 'Tepat! Adab dijunjung tinggi. Wisata berjalan tanpa mengorbankan martabat budaya.', audio: 'assets/audio/siska_bali_c1.mp3' },
+                    { text: 'Fokus profit. Biarkan ekspansi jalan terus, budaya bisa dikomersialkan buatan.', impact: { s2: -20, correct: false }, reply: 'Ekonomi melesat, namun daerah ini kehilangan jiwanya dan warga tersingkir.', audio: 'assets/audio/siska_bali_c2.mp3' },
+                    { text: 'Bebankan pajak sangat tinggi untuk turis masuk, tanpa memberi edukasi etika.', impact: { s2: -10, correct: false }, reply: 'Pendapatan naik signifikan, namun pelanggaran terhadap tempat suci masih sering terjadi.', audio: 'assets/audio/siska_bali_c3.mp3' }
+            ]}
+        ],
+        'sulsel': [
+            { speaker: 'Siska', text: 'Praktik politik uang sangat masif menjelang Pilkades. Kualitas demokrasi terancam.', audio: 'assets/audio/siska_sulsel_1.mp3' },
+            { speaker: 'Warga', text: 'Buat apa milih yang pintar kalau gak bagi-bagi sembako? Pasti bakal korupsi!', audio: 'assets/audio/warga_1.mp3' },
+            { type: 'choice', choices: [
+                    { text: 'Lakukan edukasi politik gencar dan bangun pengawasan partisipatif dari warga.', impact: { skill: 50, correct: true }, reply: 'Tepat! Keterampilan warga berdemokrasi meningkat. Mereka berani menolak suap.', audio: 'assets/audio/siska_sulsel_c1.mp3' },
+                    { text: 'Biarkan, itu budaya lokal yang sulit diubah. Fokus saja administrasi pasca-pemilihan.', impact: { skill: -20, correct: false }, reply: 'Demokrasi transaksional mengakar kuat, menghasilkan pemimpin yang korup.', audio: 'assets/audio/siska_sulsel_c2.mp3' },
+                    { text: 'Diskualifikasi seketika kandidat yang curang tanpa edukasi pada pemilihnya.', impact: { skill: -10, correct: false }, reply: 'Calon diganti secara teknis, namun mentalitas transaksional warga tidak berubah.', audio: 'assets/audio/siska_sulsel_c3.mp3' }
+            ]}
+        ],
+        'maluku': [
+            { speaker: 'Siska', text: 'Tensi memanas akibat provokasi pihak luar mengingatkan konflik masa lalu.', audio: 'assets/audio/siska_maluku_1.mp3' },
+            { speaker: 'Warga', text: 'Kami takut kejadian lama terulang. Kami harus persenjatai diri untuk berjaga-jaga.', audio: 'assets/audio/warga_1.mp3' },
+            { type: 'choice', choices: [
+                    { text: 'Gelar dialog bersama dan pererat hubungan antar kelompok.', impact: { s3: 25, disp: 50, correct: true }, reply: 'Tepat! Persatuan kembali erat. Karakter warga menjadi lebih toleran dan pemaaf.', audio: 'assets/audio/siska_maluku_c1.mp3' },
+                    { text: 'Pisahkan pemukiman mereka secara paksa berdasarkan kelompok agar tak bertemu.', impact: { s3: -20, disp: -20, correct: false }, reply: 'Konflik terhindar sesaat, tapi segregasi melanggengkan kecurigaan abadi.', audio: 'assets/audio/siska_maluku_c2.mp3' },
+                    { text: 'Tingkatkan patroli aparat bersenjata berat di setiap sudut wilayah 24 jam.', impact: { s3: -10, disp: -10, correct: false }, reply: 'Situasi terlihat aman karena ketakutan, bukan karena kesadaran hidup berdampingan.', audio: 'assets/audio/siska_maluku_c3.mp3' }
+            ]}
+        ],
+        'papua': [
+            { speaker: 'Siska', text: 'Ketimpangan akses pendidikan dan kesehatan memicu rasa ketidakadilan.', audio: 'assets/audio/siska_papua_1.mp3' },
+            { speaker: 'Warga', text: 'Anak kami tak bisa baca, dokter tak ada. Apakah kami bukan bagian dari negara ini?', audio: 'assets/audio/warga_1.mp3' },
+            { type: 'choice', choices: [
+                    { text: 'Kirim Satgas Medis dan Pendidikan, bangun infrastruktur dasar, dan afirmasi beasiswa.', impact: { s5: 25, trust: 25, engage: 25, correct: true }, reply: 'Tepat! Negara hadir. Keadilan sosial terwujud dan warga merasa diakui keberadaannya.', audio: 'assets/audio/siska_papua_c1.mp3' },
+                    { text: 'Kirim bantuan sembako instan secara terus menerus agar mereka diam.', impact: { s5: -20, trust: -20, engage: -20, correct: false }, reply: 'Pemberdayaan gagal. Warga jadi sangat bergantung dan pasif pada bantuan.', audio: 'assets/audio/siska_papua_c2.mp3' },
+                    { text: 'Serahkan permasalahan sosial ini seutuhnya pada LSM dan pihak swasta.', impact: { s5: -10, trust: -10, engage: -10, correct: false }, reply: 'Negara dianggap lepas tangan, memperbesar rasa ketidakadilan dan separatisme.', audio: 'assets/audio/siska_papua_c3.mp3' }
+        ]}
+    ]
+};
+
+        let state = {
+            playerName: "Presiden",
+            stats: { s1: 50, s2: 50, s3: 50, s4: 50, s5: 50, trust: 50, engage: 50, know: 50, skill: 50, disp: 50 },
+            nodes: {},
+            history: []
+        };
+        mapLocations.forEach(loc => state.nodes[loc.id] = 'unresolved');
+        
+        let activeScenario = null;
+        let dialogIndex = 0;
+        let isTyping = false;
+        let gameState = 'prologue'; 
+        let prologueScript = [];
+
+        /*UI & RENDERER*/
+        const ui = {
+            updateStats: () => {
+                for (let key in state.stats) {
+                    const el = document.getElementById(`stat-${key}`);
+                    if (el) {
+                        let val = Math.max(0, Math.min(100, state.stats[key]));
+                        state.stats[key] = val;
+                        el.innerText = val;
+                        el.className = val >= 70 ? 'text-green-400 font-bold ml-0.5' : (val < 40 ? 'text-red-400 font-bold ml-0.5' : 'text-white font-bold ml-0.5');
+                    }
+                }
+            },
+            renderMap: () => {
+                const container = document.getElementById('map-nodes');
+                container.innerHTML = '';
+                mapLocations.forEach(loc => {
+                    const status = state.nodes[loc.id];
+                    const node = document.createElement('div');
+                    const nodeClasses = `absolute w-4 h-4 rounded-full cursor-pointer z-10 transition-transform ${status === 'unresolved' ? 'node-unresolved hover:scale-125' : (status === 'good' ? 'node-good' : 'node-bad')}`;
+                    node.className = nodeClasses;
+                    node.style.left = `${loc.x}%`;
+                    node.style.top = `${loc.y}%`;
+                    
+                    const label = document.createElement('div');
+                    label.className = "absolute top-4 left-1/2 transform -translate-x-1/2 bg-black/85 text-white text-[9px] px-1.5 py-0.5 rounded whitespace-nowrap pointer-events-none border border-white shadow-md font-semibold";
+                    label.innerText = loc.name;
+                    node.appendChild(label);
+
+                    if (status === 'unresolved') node.onclick = () => game.enterVN(loc.id);
+                    container.appendChild(node);
+                });
+            },
+            switchScreen: (screenId) => {
+                ['screen-start', 'screen-vn', 'screen-ending', 'screen-perfect-special'].forEach(id => {
+                    document.getElementById(id).classList.add('hidden');
+                });
+                document.getElementById(screenId).classList.remove('hidden');
+            },
+            showHistory: () => {
+                const content = document.getElementById('history-content');
+                content.innerHTML = state.history.map(log => 
+                    `<div class="${log.type==='choice' ? 'text-yellow-400 font-bold' : 'text-gray-200'} border-l-2 ${log.type==='choice' ? 'border-yellow-400' : 'border-white'} pl-2 py-1">
+                        ${log.type === 'siska' ? '▼ Siska: ' : (log.type === 'local' ? '▼ Warga: ' : (log.type==='choice' ? '▼ Pilihan: ' : '▼ Hasil: '))}
+                        ${log.text}
+                    </div>`
+                ).join('');
+                document.getElementById('modal-history').classList.remove('hidden');
+            },
+            hideHistory: () => document.getElementById('modal-history').classList.add('hidden'),
+            logHistory: (text, type) => state.history.push({text, type})
+        };
+
+        /*LOGIC*/
+        const vn = {
+            typewriterInterval: null,
+            playPrologue: () => {
+                if (dialogIndex >= prologueScript.length) {
+                    game.enterMap();
+                    return;
+                }
+                const part = prologueScript[dialogIndex];
+                const spriteSiska = document.getElementById('sprite-siska');
+                
+                document.getElementById('dialog-name').classList.add('hidden');
+                
+                if (part.bg === 'map') {
+                    document.getElementById('map-bg').classList.remove('opacity-0');
+                    document.getElementById('map-bg').classList.add('opacity-100');
+                }
+
+                if (part.sprite === 'none') {
+                    spriteSiska.classList.add('hidden');
+                } else {
+                    spriteSiska.classList.remove('hidden');
+                    spriteSiska.src = part.sprite === 'smile' ? 'assets/sprites/siska_smile.png' : 
+                                       (part.sprite === 'sad' ? 'assets/sprites/siska_sad.png' : 'assets/sprites/siska_normal.png');
+                    spriteSiska.classList.add('mx-auto'); 
+                }
+
+                playVoice(part.audio);
+                vn.typeText(part.text);
+            },
+            playScenario: () => {
+                if (dialogIndex >= activeScenario.length) return;
+                const part = activeScenario[dialogIndex];
+                
+                document.getElementById('choices-container').classList.add('hidden');
+                document.getElementById('dialog-wrapper').classList.remove('hidden');
+                document.getElementById('dialog-name').classList.remove('hidden');
+                
+                const spriteSiska = document.getElementById('sprite-siska');
+                const spriteLocal = document.getElementById('sprite-local');
+                
+                if (part.type === 'choice') {
+                    vn.renderChoices(part.choices);
+                } else {
+                    const isSiska = part.speaker === 'Siska';
+                    document.getElementById('dialog-name').innerText = part.speaker;
+                    
+                    if(isSiska) {
+                        spriteSiska.classList.remove('hidden');
+                        spriteSiska.classList.remove('mx-auto');
+                        spriteLocal.classList.add('hidden');
+                        spriteSiska.src = 'assets/sprites/siska_normal.png';
+                    } else {
+                        spriteSiska.classList.add('hidden');
+                        spriteLocal.classList.remove('hidden');
+                    }
+                    
+                    playVoice(part.audio);
+                    vn.typeText(part.text);
+                    ui.logHistory(part.text, isSiska ? 'siska' : 'local');
+                }
+            },
+            typeText: (text) => {
+                isTyping = true;
+                const el = document.getElementById('dialog-text');
+                el.innerHTML = '';
+                let i = 0;
+                clearInterval(vn.typewriterInterval);
+                vn.typewriterInterval = setInterval(() => {
+                    el.innerHTML += text.charAt(i);
+                    i++;
+                    if (i >= text.length) {
+                        clearInterval(vn.typewriterInterval);
+                        el.innerHTML = text; 
+                        isTyping = false;
+                    }
+                }, 25);
+            },
+            advanceDialog: () => {
+                // Hentikan suara seketika jika user mengklik lanjut
+                stopVoice();
+
+                if (gameState === 'prologue') {
+                    if (isTyping) {
+                        clearInterval(vn.typewriterInterval);
+                        document.getElementById('dialog-text').innerHTML = prologueScript[dialogIndex].text;
+                        isTyping = false;
+                    } else {
+                        dialogIndex++;
+                        vn.playPrologue();
+                    }
+                } else if (gameState === 'vn') {
+                    if (activeScenario[dialogIndex]?.type === 'choice') return; 
+                    if (isTyping) {
+                        clearInterval(vn.typewriterInterval);
+                        document.getElementById('dialog-text').innerHTML = activeScenario[dialogIndex].text;
+                        isTyping = false;
+                    } else {
+                        dialogIndex++;
+                        vn.playScenario();
+                    }
+                }
+            },
+            renderChoices: (choices) => {
+                document.getElementById('dialog-wrapper').classList.add('hidden');
+                const container = document.getElementById('choices-container');
+                container.innerHTML = '';
+
+                let shuffledChoices = [...choices];
+                for (let i = shuffledChoices.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffledChoices[i], shuffledChoices[j]] = [shuffledChoices[j], shuffledChoices[i]];
+                }
+
+                shuffledChoices.forEach(choice => {
+                    const btn = document.createElement('button');
+                    btn.className = "w-full text-left p-3 bg-black hover:bg-gray-800 border-2 border-white rounded-lg text-white text-xs transition transform hover:translate-x-1 shadow-lg leading-relaxed";
+                    btn.innerText = choice.text;
+                    btn.onclick = () => vn.handleChoice(choice);
+                    container.appendChild(btn);
+                });
+                container.classList.remove('hidden');
+            },
+            handleChoice: (choice) => {
+                for (let key in choice.impact) {
+                    if (key !== 'correct' && state.stats[key] !== undefined) state.stats[key] += choice.impact[key];
+                }
+                ui.updateStats();
+                ui.logHistory(choice.text, 'choice');
+                
+                document.getElementById('choices-container').classList.add('hidden');
+                document.getElementById('dialog-wrapper').classList.remove('hidden');
+                document.getElementById('dialog-name').innerText = 'Siska';
+                
+                const spriteSiska = document.getElementById('sprite-siska');
+                spriteSiska.classList.remove('hidden');
+                spriteSiska.src = choice.impact.correct ? 'assets/sprites/siska_smile.png' : 'assets/sprites/siska_sad.png';
+                
+                document.getElementById('sprite-local').classList.add('hidden');
+                
+                playVoice(choice.audio);
+                vn.typeText(choice.reply);
+                ui.logHistory(choice.reply, 'result');
+
+                const currentLocId = document.getElementById('screen-vn').dataset.currentLoc;
+                state.nodes[currentLocId] = choice.impact.correct ? 'good' : 'bad';
+
+                const wrapper = document.getElementById('dialog-wrapper');
+                wrapper.onclick = () => {
+                    stopVoice();
+                    if (isTyping) {
+                        clearInterval(vn.typewriterInterval);
+                        document.getElementById('dialog-text').innerHTML = choice.reply;
+                        isTyping = false;
+                    } else {
+                        wrapper.onclick = vn.advanceDialog; 
+                        game.exitVN();
+                    }
+                };
+            }
+        };
+
+        /*KONTROLLER ALUR GAME*/
+        const game = {
+            startPrologue: () => {
+                prologueScript = [
+                    { text: `Selamat pagi, Pak ${state.playerName}.`, sprite: 'smile', bg: 'black', audio: 'assets/audio/pro_2.mp3' },
+                    { text: `Saya Siska akan mendampingi Anda hari ini.`, sprite: 'smile', bg: 'black', audio: 'assets/audio/pro_3.mp3' },
+                    { text: `Pak Presiden, ada banyak masalah yang sedang terjadi di berbagai daerah. Tolong atasi masalah tersebut dengan berlandaskan Pancasila!`, sprite: 'normal', bg: 'map', audio: 'assets/audio/pro_4.mp3' },
+                    { text: `Silakan pilih masalah yang Anda ingin selesaikan!`, sprite: 'normal', bg: 'map', audio: 'assets/audio/pro_5.mp3' }
+                ];
+
+                gameState = 'prologue';
+                dialogIndex = 0;
+                ui.switchScreen('screen-vn');
+                vn.playPrologue();
+            },
+            enterMap: () => {
+                gameState = 'map';
+                document.getElementById('dialog-wrapper').classList.add('hidden');
+                document.getElementById('sprite-siska').classList.add('hidden');
+                
+                const mapBg = document.getElementById('map-bg');
+                mapBg.src = 'assets/images/map_indonesia.png'; 
+                mapBg.style.objectFit = 'contain'; 
+                mapBg.style.filter = 'brightness(0.6)'; 
+
+                mapBg.classList.remove('opacity-0');
+                mapBg.classList.add('opacity-100');
+                document.getElementById('map-title').classList.remove('hidden');
+                document.getElementById('map-nodes').classList.remove('hidden');
+                document.getElementById('top-bar').classList.remove('hidden');
+                document.getElementById('top-bar').classList.add('flex');
+                
+                ui.renderMap();
+                ui.updateStats();
+
+                bgm.play().catch(e => console.log("BGM Play block:", e));
+            },
+            enterVN: (locId) => {
+                gameState = 'vn';
+                const locData = mapLocations.find(l => l.id === locId);
+                const vnScreen = document.getElementById('screen-vn');
+                vnScreen.dataset.currentLoc = locId;
+                
+                const mapBg = document.getElementById('map-bg');
+                mapBg.src = locData.bg;
+                mapBg.style.objectFit = 'contain';
+                mapBg.style.filter = 'brightness(0.35)';
+
+                document.getElementById('map-title').classList.add('hidden');
+                document.getElementById('map-nodes').classList.add('hidden');
+                
+                document.getElementById('sprite-local').src = locData.sprite;
+
+                activeScenario = scenarios[locId];
+                dialogIndex = 0;
+                
+                vn.playScenario();
+            },
+            exitVN: () => {
+                if (game.checkAllResolved()) {
+                    game.triggerEnding();
+                } else {
+                    const mapBg = document.getElementById('map-bg');
+                    mapBg.src = 'assets/images/map_indonesia.png'; 
+                    mapBg.style.objectFit = 'contain';
+                    mapBg.style.filter = 'brightness(0.6)';
+                    
+                    game.enterMap();
+                }
+            },
+            checkAllResolved: () => Object.values(state.nodes).every(status => status !== 'unresolved'),
+            triggerEnding: () => {
+                ui.switchScreen('screen-ending');
+                document.getElementById('top-bar').classList.add('hidden');
+
+                bgm.pause();
+                bgm.currentTime = 0;
+
+                const avgSila = (state.stats.s1 + state.stats.s2 + state.stats.s3 + state.stats.s4 + state.stats.s5) / 5;
+                const avgCivic = (state.stats.trust + state.stats.engage + state.stats.know + state.stats.skill + state.stats.disp) / 5;
+                const totalAvg = (avgSila + avgCivic) / 2;
+                const minStat = Math.min(...Object.values(state.stats));
+
+                let title = "", desc = "", spriteImg = "assets/sprites/siska_smile.png", endAudio = "";
+                let isPerfect = false;
+
+                //Pengkondisian ending sesuai nilai akhir
+                if (totalAvg === 100 && minStat === 100) {
+                    isPerfect = true;
+                    title = "PERFECT ENDING";
+                    desc = `Negara makmur. Luar Biasa Sempurna! Anda memimpin negeri ini dengan kebijaksanaan mutlak. Seluruh nilai Pancasila dan dimensi Kewarganegaraan mencapai tingkat maksimal.`;
+                    spriteImg = "assets/sprites/siska_perfect_end.png";
+                    endAudio = "assets/audio/end_perfect.mp3";
+                } else if (totalAvg >= 60 && minStat >= 40) {
+                    title = "GOOD ENDING";
+                    desc = `Negara stabil (Stable State). Anda menjaga keutuhan negara dan menyelesaikan sebagian besar konflik.`;
+                    spriteImg = "assets/sprites/siska_good_end.png";
+                    endAudio = "assets/audio/end_good.mp3";
+                } else if (totalAvg >= 40 && minStat > 0) {
+                    title = "BAD ENDING";
+                    desc = `Negara krisis. Banyak yang dikorbankan dalam keputusan. Ketidakpercayaan masyarakat tinggi dan disintegrasi sosial mulai muncul.`;
+                    spriteImg = "assets/sprites/siska_bad_end.png";
+                    endAudio = "assets/audio/end_bad.mp3";
+                } else {
+                    title = "WORST ENDING";
+                    desc = `Negara Gagal (Failed State). Kegagalan total dalam kepemimpinan. Nilai Pancasila hancur, masyarakat kehilangan kepercayaan mutlak pada negara.`;
+                    spriteImg = "assets/sprites/siska_worst_end.png";
+                    endAudio = "assets/audio/end_worst.mp3";
+                }
+
+                playVoice(endAudio);
+
+                const titleEl = document.getElementById('ending-title');
+                titleEl.innerText = title;
+                const isGoodOrPerfect = title === "PERFECT ENDING" || title === "GOOD ENDING";
+                titleEl.className = `text-2xl font-bold mb-2 uppercase drop-shadow-lg ${isGoodOrPerfect ? 'text-green-400' : 'text-red-500'}`;
+                
+                document.getElementById('ending-desc').innerText = desc;
+                
+                //Set nilai laporan akhir secara lengkap
+                document.getElementById('end-stat-pancasila').innerText = avgSila.toFixed(1);
+                document.getElementById('end-stat-s1').innerText = state.stats.s1;
+                document.getElementById('end-stat-s2').innerText = state.stats.s2;
+                document.getElementById('end-stat-s3').innerText = state.stats.s3;
+                document.getElementById('end-stat-s4').innerText = state.stats.s4;
+                document.getElementById('end-stat-s5').innerText = state.stats.s5;
+                
+                document.getElementById('end-stat-trust').innerText = state.stats.trust;
+                document.getElementById('end-stat-engage').innerText = state.stats.engage;
+                document.getElementById('end-stat-know').innerText = state.stats.know;
+                document.getElementById('end-stat-skill').innerText = state.stats.skill;
+                document.getElementById('end-stat-disp').innerText = state.stats.disp;
+
+                document.getElementById('ending-sprite').src = spriteImg;
+
+                const buttonsContainer = document.getElementById('ending-buttons-container');
+                buttonsContainer.innerHTML = '';
+
+                if (isPerfect) {
+                    const nextBtn = document.createElement('button');
+                    nextBtn.className = "w-full py-2.5 bg-black text-white border-2 border-white font-bold rounded-lg transition transform hover:scale-105 shadow-lg text-xs animate-bounce";
+                    nextBtn.innerText = "Ketuk untuk lanjut ▼";
+                    nextBtn.onclick = () => ui.switchScreen('screen-perfect-special');
+                    buttonsContainer.appendChild(nextBtn);
+                } else {
+                    const flexBox = document.createElement('div');
+                    flexBox.className = "flex space-x-2 w-full";
+
+                    const replayBtn = document.createElement('button');
+                    replayBtn.className = "w-1/2 py-2.5 bg-black hover:bg-gray-800 text-white border-2 border-white font-bold rounded-lg transition transform hover:scale-105 shadow-lg text-xs";
+                    replayBtn.innerText = "Main Lagi";
+
+                    //Pemutaran efek suara sebelum reload
+                    replayBtn.onclick = () => {
+                        //Memutar efek suara
+                        let clickSfx = new Audio('assets/audio/click.mp3');
+                        clickSfx.play().catch(err => console.log("SFX error:", err));
+                        //Beri jeda sebentar
+                        setTimeout(() => {
+                            location.reload();
+                        }, 300);
+                    };
+
+                    const learnBtn = document.createElement('button');
+                    learnBtn.className = "w-1/2 py-2.5 bg-blue-600 hover:bg-blue-500 text-white border-2 border-white font-bold rounded-lg transition transform hover:scale-105 shadow-lg text-[10px] leading-tight flex items-center justify-center text-center";
+                    learnBtn.innerText = "Pelajari Civic Empowerment Pancasila";
+                    learnBtn.onclick = () => window.open('https://pancasila-civic-empowerment.page.gd/', '_blank');
+
+                    flexBox.appendChild(replayBtn);
+                    flexBox.appendChild(learnBtn);
+                    buttonsContainer.appendChild(flexBox);
+                }
+            }
+        };
+/**
+     *Disable right-click of mouse, F12 key, and save key combinations on page
+     */
+    window.onload = function() {
+        document.addEventListener("contextmenu", function(e) {
+            e.preventDefault();
+        }, false);
+        document.addEventListener("keydown", function(e) {
+            //document.onkeydown = function(e) {
+            // "I" key
+            if (e.ctrlKey && e.shiftKey && e.keyCode == 73) {
+                disabledEvent(e);
+            }
+            // "J" key
+            if (e.ctrlKey && e.shiftKey && e.keyCode == 74) {
+                disabledEvent(e);
+            }
+            // "S" key + macOS
+            if (e.keyCode == 83 && (navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey)) {
+                disabledEvent(e);
+            }
+            // "U" key
+            if (e.ctrlKey && e.keyCode == 85) {
+                disabledEvent(e);
+            }
+            // "F12" key
+            if (event.keyCode == 123) {
+                disabledEvent(e);
+            }
+        }, false);
+
+        function disabledEvent(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            } else if (window.event) {
+                window.event.cancelBubble = true;
+            }
+            e.preventDefault();
+            return false;
+        }  
+    };
+    //End of disable script
+        ui.updateStats();
+    </script>
+</body>
+</html>
